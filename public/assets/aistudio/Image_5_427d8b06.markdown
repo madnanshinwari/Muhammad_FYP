@@ -1,0 +1,225 @@
+---
+name: Abdul Salam Dairy Farm System
+colors:
+  surface: '#f4faff'
+  surface-dim: '#cfdce4'
+  surface-bright: '#f4faff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#e9f6fd'
+  surface-container: '#e3f0f8'
+  surface-container-high: '#ddeaf2'
+  surface-container-highest: '#d7e4ec'
+  on-surface: '#111d23'
+  on-surface-variant: '#3f4a3d'
+  inverse-surface: '#263238'
+  inverse-on-surface: '#e6f3fb'
+  outline: '#6f7a6c'
+  outline-variant: '#becaba'
+  surface-tint: '#006e25'
+  primary: '#006d25'
+  on-primary: '#ffffff'
+  primary-container: '#218838'
+  on-primary-container: '#ffffff'
+  inverse-primary: '#79dc80'
+  secondary: '#2e6a41'
+  on-secondary: '#ffffff'
+  secondary-container: '#b1f2be'
+  on-secondary-container: '#347047'
+  tertiary: '#765b00'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#d2a622'
+  on-tertiary-container: '#513d00'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#94f99a'
+  primary-fixed-dim: '#79dc80'
+  on-primary-fixed: '#002106'
+  on-primary-fixed-variant: '#00531a'
+  secondary-fixed: '#b1f2be'
+  secondary-fixed-dim: '#96d5a3'
+  on-secondary-fixed: '#00210d'
+  on-secondary-fixed-variant: '#12512c'
+  tertiary-fixed: '#ffdf94'
+  tertiary-fixed-dim: '#efc13e'
+  on-tertiary-fixed: '#241a00'
+  on-tertiary-fixed-variant: '#594400'
+  background: '#f4faff'
+  on-background: '#111d23'
+  surface-variant: '#d7e4ec'
+typography:
+  display-hero:
+    fontFamily: Outfit
+    fontSize: 48px
+    fontWeight: '700'
+    lineHeight: 56px
+    letterSpacing: -0.02em
+  display-hero-mobile:
+    fontFamily: Outfit
+    fontSize: 32px
+    fontWeight: '700'
+    lineHeight: 40px
+    letterSpacing: -0.01em
+  headline-lg:
+    fontFamily: Outfit
+    fontSize: 32px
+    fontWeight: '600'
+    lineHeight: 40px
+    letterSpacing: -0.015em
+  headline-lg-mobile:
+    fontFamily: Outfit
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+    letterSpacing: -0.01em
+  headline-md:
+    fontFamily: Outfit
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+    letterSpacing: -0.01em
+  headline-sm:
+    fontFamily: Outfit
+    fontSize: 20px
+    fontWeight: '600'
+    lineHeight: 28px
+  title-md:
+    fontFamily: Outfit
+    fontSize: 18px
+    fontWeight: '500'
+    lineHeight: 26px
+  body-lg:
+    fontFamily: Outfit
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 24px
+  body-md:
+    fontFamily: Outfit
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: 20px
+  label-md:
+    fontFamily: Outfit
+    fontSize: 13px
+    fontWeight: '600'
+    lineHeight: 18px
+    letterSpacing: 0.02em
+  label-sm:
+    fontFamily: Outfit
+    fontSize: 11px
+    fontWeight: '600'
+    lineHeight: 16px
+    letterSpacing: 0.04em
+  caption:
+    fontFamily: Outfit
+    fontSize: 12px
+    fontWeight: '400'
+    lineHeight: 16px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  gutter: 1.5rem
+  gutter-mobile: 1rem
+  margin: 2rem
+  margin-mobile: 1rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.5rem
+  space-xl: 2.5rem
+---
+
+## Brand & Style
+
+This design system expresses pure, wholesome farm freshness translated into an elevated, modern digital commerce and management platform. It synthesizes organic warmth with clinical agricultural clarity—bridging daily consumer e-commerce (raw milk, artisanal butter, fresh yogurts) and administrative farm operations (yield monitoring, livestock batches, subscription fulfillment).
+
+### Aesthetic Direction
+- **Tactile Modern Organic**: Natural warmth anchored by structured layouts, airy whitespace, and crisp precision. The atmosphere avoids rustic grit in favor of clean, hygienic agricultural excellence.
+- **Bilingual Balance**: Designed natively for symmetrical harmony between English (LTR) and Urdu/Arabic (RTL) scripts, respecting horizontal flow, line heights, and typography balance.
+- **Trust & Purity**: Conveys freshness, halal integrity, and farm-to-table traceability through luminous, unpolluted backgrounds, leaf-inspired accents, and warm golden touches.
+
+## Colors
+
+The palette centers on wholesome agricultural freshness, sunlight, and raw dairy purity.
+
+### Palette Roles
+- **Primary (`#218838` - Fresh Green)**: Key interactive states, primary action triggers, purchase confirmations, and active health indicators.
+- **Secondary (`#14532D` - Deep Forest Green)**: Institutional authority, top-level headings, header backgrounds, navigation chrome, and grounding surfaces.
+- **Tertiary (`#F4C542` - Golden Butter)**: Promotional tags, dairy fat ratings, subscription perks, star ratings, and celebratory alerts.
+- **Neutral (`#263238` - Dark Charcoal)**: High-legibility editorial text, data readouts, and core iconography.
+- **Canvas (`#FFFDF5` - Soft Cream)**: The primary ambient canvas, preventing clinical glare and evoking raw, rich dairy milk.
+- **Surface (`#FFFFFF` - Crisp White)**: Elevated cards, sheet panels, product tiles, and modals.
+- **Subtle Tint (`#F3F7F1` - Light Mint)**: Hover states, badge backgrounds, table striping, and soft notification backdrops.
+- **Outline (`#E2E8F0` - Soft Grey / Light Sage)**: Low-friction separation lines, metric borders, and form boundaries.
+
+## Typography
+
+The type system balances geometric clarity with bilingual elegance. **Outfit** serves as the primary Latin family, featuring open counters and friendly circular geometry that harmonize with clean dairy packaging. 
+
+### Bilingual Support (Urdu / Arabic)
+- For Urdu strings (`اردو`), fall back gracefully to **Noto Nastaliq Urdu** or **Noto Sans Arabic** with a line-height multiplier of `1.35x` to prevent clipping of extended vertical diacritics and ligatures.
+- Maintain consistent baseline alignment when English metrics (e.g., "1 Liter / ۱ لیٹر") are presented side by side.
+- Numbers in transactional tables and pricing badges should default to tabular lining (`font-variant-numeric: tabular-nums`).
+
+## Layout & Spacing
+
+A structured, responsive grid system underpins both consumer catalog browsing and analytical farm management.
+
+### Grid & Breakpoints
+- **Desktop (≥1200px)**: 12-column layout, `1.5rem` (24px) gutters, and `2rem` (32px) exterior margins. Content max-width is constrained to `1280px` for optimal reading and scanning.
+- **Tablet (768px - 1199px)**: 8-column layout, `1.25rem` (20px) gutters, and `1.5rem` (24px) outer margin.
+- **Mobile (<768px)**: 4-column layout, `1rem` (16px) gutters, and `1rem` (16px) margins.
+
+### Rhythm & Alignment
+Spacing follows an organic 4px/8px modular rhythm. Component stacks prefer `space-md` (`1rem`) for dense administrative views and `space-lg` (`1.5rem`) for consumer-facing storefront displays.
+
+## Elevation & Depth
+
+Visual hierarchy combines warm ambient light with low-contrast borders. Surfaces maintain a clean, physical presence without heavy drop shadows.
+
+- **Level 0 (Flat)**: Background canvas (`#FFFDF5`). No elevation.
+- **Level 1 (Card & Shelf Surfaces)**: Crisp white (`#FFFFFF`) with a 1px border of `#E2E8F0` and an ambient, warm green-tinted shadow: `0 2px 8px -2px rgba(20, 83, 45, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.03)`.
+- **Level 2 (Hovered Cards & Interactive Panels)**: Elevated surface with `0 10px 20px -4px rgba(20, 83, 45, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02)` and border transitioning to `#218838/20`.
+- **Level 3 (Modals, Slide-overs, & Cart Drawers)**: Deep focus elevation: `0 20px 30px -10px rgba(20, 83, 45, 0.14), 0 10px 10px -5px rgba(0, 0, 0, 0.04)`.
+
+## Shapes
+
+The shape system leverages level `2` rounded geometry, reflecting the smooth, fluid nature of milk and dairy products while maintaining commercial rigor.
+
+- **Base Radius (`rounded-md`, 0.5rem / 8px)**: Inputs, buttons, segmented selectors, and operational table containers.
+- **Card Radius (`rounded-lg`, 1rem / 16px)**: Product cards, inventory stat boxes, delivery calendars, and modal panels.
+- **Pill Radius (`rounded-full`, 9999px)**: Status badges, category chips, unit switchers, and quantity steppers.
+
+## Components
+
+### Buttons
+- **Primary Action**: Solid `#218838` background, `#FFFFFF` text, `0.5rem` radius. On hover: shifts to `#14532D` with subtle lift.
+- **Secondary / Accent Action**: Solid `#F4C542` background, `#263238` bold text. Used selectively for checkout actions, subscription renewals, or primary promotional CTAs.
+- **Outline Action**: White background, 1.5px border in `#218838`, `#218838` text. Fills with `#F3F7F1` on hover.
+
+### Product Cards
+- Encapsulated in `#FFFFFF` with a 1px `#E2E8F0` border and `1rem` radius.
+- Includes a top visual frame for fresh batch photography, followed by dairy purity metrics (e.g., Fat % / FAT-SNF ratio pill badges in `#F3F7F1`).
+- Contains an inline **Unit Selector** (e.g., `0.5L`, `1L`, `5L`, or `1kg`, `5kg`) with a segmented pill control.
+- Features a dual-state **Add to Cart** CTA: a single-tap button that morphs into a numeric stepper (`-`, `qty`, `+`) upon item addition.
+
+### Badges & Status Pills
+- Compact, pill-shaped tags with `11px` bold typography.
+- **Fresh Batch**: `#F3F7F1` background, `#14532D` text, dot indicator in `#218838`.
+- **Pre-Order / Low Stock**: Light amber tint background, `#B45309` text, `#F4C542` dot indicator.
+- **Certified Organic / Pure**: Solid `#14532D` background, `#FFFFFF` text.
+
+### Form Inputs & Selectors
+- Standard height `44px` with a subtle `#FFFFFF` background, 1px `#E2E8F0` border, and text in `#263238`.
+- Focus state activates a 1.5px border in `#218838` accompanied by a soft glow: `box-shadow: 0 0 0 3px rgba(33, 136, 56, 0.15)`.
+
+### Operational Data Tables
+- Crisp `#FFFFFF` surface with `#F3F7F1` header row and uppercase `11px` tracking labels in `#14532D`.
+- Alternating subtle row separator lines in `#E2E8F0`. Hover row state highlighted via `#FFFDF5`.
+- Dedicated numeric cells for daily liter yield, milking batches, and temperature logs set with tabular numerical alignment.

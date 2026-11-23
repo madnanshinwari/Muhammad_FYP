@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abdul Salam Dairy Farm System</title>
+    <meta name="description" content="Wholesome farm-fresh dairy commerce, daily milk subscriptions, livestock milking logs, batch traceability, and farm operational management." />
+    <meta property="og:title" content="Abdul Salam Dairy Farm System" />
+    <meta property="og:description" content="Wholesome farm-fresh dairy commerce, daily milk subscriptions, livestock milking logs, batch traceability, and farm operational management." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Window Fetch Interceptor Compatibility Shim -->
+    <script>
+      (function() {
+        try {
+          var _rawFetch = window.fetch ? window.fetch.bind(window) : null;
+          var _activeFetch = _rawFetch;
+          var _descriptor = {
+            get: function() {
+              return _activeFetch;
+            },
+            set: function(fn) {
+              _activeFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          };
+          try {
+            Object.defineProperty(window, 'fetch', _descriptor);
+          } catch (_e1) {}
+          try {
+            if (typeof Window !== 'undefined' && Window.prototype) {
+              Object.defineProperty(Window.prototype, 'fetch', _descriptor);
+            }
+          } catch (_e2) {}
+        } catch (_e) {}
+      })();
+    </script>
+
+    <!-- Google Fonts: Outfit & Noto Nastaliq Urdu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#FFFDF5] text-[#263238] antialiased selection:bg-[#218838] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

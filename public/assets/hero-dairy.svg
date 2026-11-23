@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 640" role="img" aria-label="Farm-fresh milk bottles in front of a green dairy farm with a barn">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFDF5"/>
+      <stop offset="1" stop-color="#F3F7F1"/>
+    </linearGradient>
+    <linearGradient id="milk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F3F7F1"/>
+      <stop offset="0.5" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F3F7F1"/>
+    </linearGradient>
+    <clipPath id="bottleClip">
+      <path d="M505 300H555V335C555 360 590 365 590 400V540Q590 565 565 565H495Q470 565 470 540V400C470 365 505 360 505 335Z"/>
+    </clipPath>
+    <g id="bottle">
+      <ellipse cx="530" cy="574" rx="78" ry="10" fill="#0b3d1f" opacity="0.35"/>
+      <path d="M505 300H555V335C555 360 590 365 590 400V540Q590 565 565 565H495Q470 565 470 540V400C470 365 505 360 505 335Z" fill="#FFFFFF" fill-opacity="0.55" stroke="#b1f2be" stroke-width="4"/>
+      <g clip-path="url(#bottleClip)">
+        <rect x="460" y="350" width="140" height="230" fill="url(#milk)"/>
+        <path d="M460 350C490 340 510 360 530 350C550 340 570 360 600 350V362H460Z" fill="#FFFFFF"/>
+        <rect x="478" y="360" width="10" height="190" rx="5" fill="#FFFFFF" opacity="0.8"/>
+      </g>
+      <rect x="500" y="288" width="60" height="18" rx="4" fill="#F4C542"/>
+      <rect x="485" y="430" width="90" height="95" rx="10" fill="#F4C542"/>
+      <path d="M530 448C530 448 508 478 508 492C508 504 518 512 530 512C542 512 552 504 552 492C552 478 530 448 530 448Z" fill="#14532D"/>
+      <path d="M522 488C522 494 526 500 532 501" fill="none" stroke="#b1f2be" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <rect width="800" height="640" fill="url(#sky)"/>
+
+  <circle cx="630" cy="130" r="105" fill="#F4C542" opacity="0.22"/>
+  <circle cx="630" cy="130" r="68" fill="#F4C542"/>
+
+  <g fill="#FFFFFF" opacity="0.95">
+    <ellipse cx="150" cy="120" rx="62" ry="20"/>
+    <ellipse cx="195" cy="104" rx="42" ry="20"/>
+    <ellipse cx="400" cy="70" rx="52" ry="16"/>
+    <ellipse cx="436" cy="58" rx="32" ry="14"/>
+  </g>
+
+  <path d="M0 380C150 320 300 340 450 370C600 400 700 340 800 350V640H0Z" fill="#b1f2be"/>
+
+  <g>
+    <rect x="140" y="350" width="110" height="82" fill="#FFFFFF"/>
+    <polygon points="128,354 195,302 262,354" fill="#14532D"/>
+    <rect x="177" y="386" width="36" height="46" fill="#F4C542"/>
+    <path d="M177 386L213 432M213 386L177 432" stroke="#14532D" stroke-width="3"/>
+    <circle cx="195" cy="338" r="8" fill="#F4C542"/>
+    <rect x="256" y="372" width="34" height="60" fill="#F3F7F1"/>
+    <rect x="252" y="364" width="42" height="10" rx="3" fill="#14532D"/>
+  </g>
+
+  <path d="M0 440C120 390 280 410 400 440C550 475 680 410 800 430V640H0Z" fill="#218838"/>
+  <path d="M0 520C200 480 400 500 560 520C680 535 750 515 800 505V640H0Z" fill="#14532D"/>
+
+  <g stroke="#94f99a" stroke-width="3" stroke-linecap="round" opacity="0.8">
+    <path d="M60 560V548M68 562V550M76 560V548"/>
+    <path d="M700 600V588M708 602V590M716 600V588"/>
+    <path d="M250 610V598M258 612V600"/>
+  </g>
+
+  <g fill="#F4C542">
+    <circle cx="90" cy="500" r="5"/>
+    <circle cx="140" cy="530" r="4"/>
+    <circle cx="745" cy="470" r="5"/>
+    <circle cx="640" cy="620" r="4"/>
+  </g>
+
+  <use href="#bottle" transform="translate(-51.6 163.2) scale(0.72)"/>
+  <use href="#bottle" transform="translate(361.4 224.7) scale(0.62)"/>
+  <use href="#bottle"/>
+</svg>

@@ -1,0 +1,7 @@
+{
+  "name": "Abdul Salam Dairy Farm System",
+  "description": "Wholesome farm-fresh dairy commerce, daily milk subscriptions, livestock milking logs, batch traceability, and farm operational management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
