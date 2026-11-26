@@ -84,12 +84,16 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_method TEXT NOT NULL, -- 'Cash on Delivery', 'JazzCash', 'EasyPaisa', 'Bank Transfer'
     payment_status TEXT NOT NULL DEFAULT 'Pending',
     order_status TEXT NOT NULL DEFAULT 'Placed', -- 'Placed', 'Milked & Chilled', 'Out for Delivery', 'Delivered', 'Cancelled'
+    rider_id INTEGER REFERENCES users(id),
     order_notes TEXT,
     items_json TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(customer_id) REFERENCES users(id)
 );
 """)
+order_columns = [column[1] for column in cur.execute("PRAGMA table_info(orders)").fetchall()]
+if "rider_id" not in order_columns:
+    cur.execute("ALTER TABLE orders ADD COLUMN rider_id INTEGER REFERENCES users(id)")
 
 # Create Subscriptions Table
 cur.execute("""
@@ -553,18 +557,7 @@ WHERE NOT EXISTS (SELECT 1 FROM products WHERE name_en = ?)
     ) in exact_products
 ])
 
-# Seed farm operations data for the management workspace.
-if cur.execute("SELECT COUNT(*) FROM livestock").fetchone()[0] == 0:
-    cur.executemany("""
-    INSERT INTO livestock (
-        tag_id, name, breed, species, gender, date_of_birth, weight_kg,
-        status, purchase_date, purchase_price
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, [
-        ('BF-104', 'Noor', 'Nili-Ravi', 'Buffalo', 'Female', '2022-03-15', 520, 'Milking', '2022-06-01', 420000),
-        ('CW-088', 'Sona', 'Sahiwal', 'Cow', 'Female', '2021-11-20', 390, 'Pregnant', '2022-02-10', 310000),
-        ('BF-118', 'Gulabo', 'Nili-Ravi', 'Buffalo', 'Female', '2020-08-05', 545, 'Dry', '2021-01-18', 385000)
-    ])
+# Animal records are created by the farm owner.
 
 if cur.execute("SELECT COUNT(*) FROM feed_inventory").fetchone()[0] == 0:
     cur.executemany("""

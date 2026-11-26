@@ -38,6 +38,7 @@ project-root/
 │   │   ├── pages/
 │   │   │   ├── customer/       # HomePage, CatalogPage, CheckoutPage
 │   │   │   ├── admin/          # AdminDashboard, AdminBatches, AdminProducts, AdminOrders
+│   │   │   ├── rider/           # RiderDashboardPage
 │   │   │   └── auth/           # LoginPage, RegisterPage
 │   │   ├── context/            # AuthContext, CartContext, LanguageContext
 │   │   ├── services/           # api.js REST client
@@ -112,8 +113,11 @@ Run the database initialization step whenever `database/app.db` is missing,
 empty, or needs to be reset. On systems where the Python command is named
 `python3`, use `python3 database/init_db.py` instead.
 
-Customers and Farm Owners can register normally. Farm Owner accounts receive
-immediate access to Farm Management without a pending approval step.
+Customers, Farm Owners, and Riders can register normally. Farm Owner accounts
+receive immediate access to Farm Management without a pending approval step.
+Farm Owners can assign active orders to Riders from the Delivery Sheet. Riders
+can view assigned deliveries, mark them delivered, review delivery history, and
+manage their profile from the Rider Dashboard sidebar.
 
 ### 3. Running Standalone FastAPI Backend (Optional)
 If running the Python FastAPI backend separately:

@@ -17,6 +17,7 @@ import { CheckoutPage } from './pages/customer/CheckoutPage.jsx';
 import { EditProfilePage } from './pages/customer/EditProfilePage.jsx';
 import { CustomerDashboardPage } from './pages/customer/CustomerDashboardPage.jsx';
 import { AdminDashboard } from './pages/admin/AdminDashboard.jsx';
+import { RiderDashboardPage } from './pages/rider/RiderDashboardPage.jsx';
 import { LoginPage } from './pages/auth/LoginPage.jsx';
 import { RegisterPage } from './pages/auth/RegisterPage.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
@@ -49,6 +50,7 @@ export default function App() {
                           </ProtectedAdminRoute>
                         }
                       />
+                      <Route path="/rider/*" element={<RiderDashboardPage />} />
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/register" element={<RegisterPage />} />
                       <Route path="*" element={<NotFoundPage />} />

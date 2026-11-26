@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { Button } from '../../components/common/Button.jsx';
-import { Lock, Mail, User, Phone, MapPin, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, Phone, MapPin, AlertCircle, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 
 export function RegisterPage() {
   const { register, loading } = useAuth();
@@ -26,7 +26,9 @@ export function RegisterPage() {
     setError('');
     try {
       const user = await register(formData);
-      navigate(user.role === 'admin' || user.role === 'farm_owner' ? '/admin' : '/dashboard');
+      navigate(user.role === 'admin' || user.role === 'farm_owner'
+        ? '/admin'
+        : user.role === 'rider' ? '/rider' : '/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed.');
     }
@@ -42,12 +44,16 @@ export function RegisterPage() {
             className="mx-auto h-16 w-28 object-contain"
           />
           <h1 className="text-2xl font-extrabold text-[#111d23] tracking-tight">
-          {formData.role === 'farm_owner' ? 'Create Farm Owner Account' : 'Create Customer Account'}
+          {formData.role === 'farm_owner'
+            ? 'Create Farm Owner Account'
+            : formData.role === 'rider' ? 'Create Rider Account' : 'Create Customer Account'}
           </h1>
           <p className="text-xs text-[#3f4a3d]">
           {formData.role === 'farm_owner'
             ? 'Manage products, batches, orders, and farm operations.'
-            : 'Join Abdul Salam Dairy Farm for pure raw milk delivered to your door.'}
+            : formData.role === 'rider'
+              ? 'Manage your assigned deliveries and delivery history.'
+              : 'Join Abdul Salam Dairy Farm for pure raw milk delivered to your door.'}
           </p>
         </div>
 
@@ -63,11 +69,11 @@ export function RegisterPage() {
             <label className="text-xs font-semibold text-[#14532D] block mb-2">
               Account Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'customer', farm_name: '' })}
-                className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-all ${
+                className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-2 text-center transition-all ${
                   formData.role === 'customer'
                     ? 'border-[#218838] bg-[#F3F7F1] text-[#14532D] ring-2 ring-[#218838]/15'
                     : 'border-[#E2E8F0] bg-white text-[#6f7a6c] hover:border-[#218838]/50'
@@ -81,7 +87,7 @@ export function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'farm_owner', farm_name: '' })}
-                className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-all ${
+                className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-2 text-center transition-all ${
                   formData.role === 'farm_owner'
                     ? 'border-[#218838] bg-[#F3F7F1] text-[#14532D] ring-2 ring-[#218838]/15'
                     : 'border-[#E2E8F0] bg-white text-[#6f7a6c] hover:border-[#218838]/50'
@@ -90,6 +96,20 @@ export function RegisterPage() {
                 <ShieldCheck className="h-6 w-6" />
                 <span className="text-xs font-bold">Farm Owner</span>
                 <span className="text-[10px] leading-tight">Manage farm operations</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'rider', farm_name: '' })}
+                className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border p-2 text-center transition-all ${
+                  formData.role === 'rider'
+                    ? 'border-[#218838] bg-[#F3F7F1] text-[#14532D] ring-2 ring-[#218838]/15'
+                    : 'border-[#E2E8F0] bg-white text-[#6f7a6c] hover:border-[#218838]/50'
+                }`}
+              >
+                <Truck className="h-6 w-6" />
+                <span className="text-xs font-bold">Rider</span>
+                <span className="text-[10px] leading-tight">Deliver assigned orders</span>
               </button>
             </div>
           </div>

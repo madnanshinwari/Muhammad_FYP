@@ -126,7 +126,9 @@ export function EditProfilePage() {
       setSuccess(lang === 'ur' ? 'پروفائل کامیابی سے اپ ڈیٹ ہو گیا' : 'Profile updated successfully!');
 
       setTimeout(() => {
-        navigate(user.role === 'admin' || user.role === 'farm_owner' ? '/admin' : '/');
+        navigate(user.role === 'admin' || user.role === 'farm_owner'
+          ? '/admin'
+          : user.role === 'rider' ? '/rider/profile' : '/');
       }, 1500);
     } catch (err) {
       setError(err.message || 'Failed to update profile');

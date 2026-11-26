@@ -10,8 +10,7 @@ import {
   Package,
   ReceiptText,
   ShoppingBag,
-  Truck,
-  User
+  Truck
 } from 'lucide-react';
 
 const statusStyles = {
@@ -73,6 +72,7 @@ export function CustomerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [productMap, setProductMap] = useState({});
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -105,6 +105,20 @@ export function CustomerDashboardPage() {
     [orders]
   );
 
+  const cancelOrder = async (order) => {
+    if (!window.confirm(lang === 'ur' ? 'کیا آپ یہ آرڈر منسوخ کرنا چاہتے ہیں؟' : 'Cancel this order?')) return;
+    setCancellingOrderId(order.id);
+    setError('');
+    try {
+      const updated = await api.updateOrderStatus(order.id, 'Cancelled');
+      setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (err) {
+      setError(err.message || 'Unable to cancel this order.');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -133,8 +147,7 @@ export function CustomerDashboardPage() {
         </div>
         <Link to="/profile">
           <Button variant="outline">
-            <User className="h-4 w-4" />
-            <span>{lang === 'ur' ? 'پروفائل میں ترمیم' : 'Edit profile'}</span>
+            <span>{lang === 'ur' ? 'میرا پروفائل' : 'My Profile'}</span>
           </Button>
         </Link>
       </div>
@@ -186,8 +199,8 @@ export function CustomerDashboardPage() {
         <section className="lg:col-span-8">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-[#14532D]">{lang === 'ur' ? 'حالیہ آرڈرز' : 'Recent orders'}</h2>
-              <p className="mt-1 text-xs text-gray-500">{lang === 'ur' ? 'آپ کے آخری آرڈرز' : 'Your latest order activity'}</p>
+              <h2 className="text-xl font-bold text-[#14532D]">{lang === 'ur' ? 'میرے آرڈرز' : 'My Orders'}</h2>
+              <p className="mt-1 text-xs text-gray-500">{lang === 'ur' ? 'اپنے تمام آرڈرز، صورتحال اور تفصیلات دیکھیں' : 'View previous orders, status, and order details'}</p>
             </div>
           </div>
 
@@ -208,7 +221,7 @@ export function CustomerDashboardPage() {
               </div>
             ) : (
               <div className="space-y-3 p-3 sm:p-4">
-                {orders.slice(0, 5).map((order) => {
+                {orders.map((order) => {
                   const orderItems = parseItems(order);
                   return (
                     <article key={order.id} className="rounded-xl border border-[#E2E8F0] bg-[#FFFDF5]/40 p-4 transition hover:border-[#218838]/30">
@@ -257,11 +270,25 @@ export function CustomerDashboardPage() {
                         <span className="text-xs font-semibold text-gray-500">
                           {lang === 'ur' ? `کل اشیاء: ${orderItems.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)}` : `${orderItems.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)} item(s)`}
                         </span>
-                        <div className="text-right">
+                        <div className="flex items-center gap-3">
+                          {order.order_status === 'Placed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => cancelOrder(order)}
+                              disabled={cancellingOrderId === order.id}
+                            >
+                              {cancellingOrderId === order.id
+                                ? (lang === 'ur' ? 'منسوخ ہو رہا ہے...' : 'Cancelling...')
+                                : (lang === 'ur' ? 'آرڈر منسوخ کریں' : 'Cancel order')}
+                            </Button>
+                          )}
+                          <div className="text-right">
                           <span className="mr-2 text-xs text-gray-500">{lang === 'ur' ? 'کل' : 'Total'}</span>
                           <span className="text-base font-extrabold text-[#14532D] tabular-nums">
                             Rs. {Number(order.total_amount || 0).toLocaleString()}
                           </span>
+                          </div>
                         </div>
                       </div>
                     </article>

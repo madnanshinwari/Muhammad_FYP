@@ -52,7 +52,7 @@ When you run `npm run dev`, the Vite server starts on port 3000 and the API midd
 
 **Authentication**:
 - Token stored as `as_dairy_token` in localStorage; signed tokens expire after 8 hours
-- Account roles: `customer` can shop; `farm_owner` and `admin` can access Farm Management
+- Account roles: `customer` can shop; `farm_owner` and `admin` can access Farm Management; `rider` can view and complete assigned deliveries
 - Default test accounts: `admin@abdulsalamdairy.com` / `admin123` (admin), `customer@abdulsalamdairy.com` / `customer123` (customer)
 - Password hashing: bcrypt with legacy SHA256 migration on successful login (in `server-api.js`)
 

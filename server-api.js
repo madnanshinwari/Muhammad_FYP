@@ -20,6 +20,10 @@ try {
   if (!userColumns.some((column) => column.name === 'farm_name')) {
     db.exec('ALTER TABLE users ADD COLUMN farm_name TEXT');
   }
+  const orderColumns = db.prepare('PRAGMA table_info(orders)').all();
+  if (!orderColumns.some((column) => column.name === 'rider_id')) {
+    db.exec('ALTER TABLE orders ADD COLUMN rider_id INTEGER REFERENCES users(id)');
+  }
   db.prepare("UPDATE users SET role = 'farm_owner' WHERE role = 'pending_farm_owner'")
     .run();
 } catch (e) {
@@ -227,14 +231,15 @@ export function apiMiddleware() {
 
           if (pathname === '/api/auth/login' && method === 'POST') {
             const body = await parseBody(req);
+            const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
 
-            if (!body.email || !body.password) {
+            if (!email || !body.password) {
               return sendJson(res, 400, { detail: 'Email and password required.' });
             }
 
             const user = db.prepare(
-              'SELECT id, name, email, role, phone, address, profile_image_url, farm_name, bottle_credit_balance, password_hash FROM users WHERE email = ?'
-            ).get(body.email);
+              'SELECT id, name, email, role, phone, address, profile_image_url, farm_name, bottle_credit_balance, password_hash FROM users WHERE lower(trim(email)) = ?'
+            ).get(email);
 
             if (!user || !verifyPassword(body.password, user.password_hash)) {
               return sendJson(res, 401, { detail: 'Invalid email or password.' });
@@ -266,7 +271,8 @@ export function apiMiddleware() {
               return sendJson(res, 400, { detail: 'Name, email, and password are required.' });
             }
 
-            if (!validateEmail(body.email)) {
+            const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+            if (!validateEmail(email)) {
               return sendJson(res, 400, { detail: 'Invalid email format.' });
             }
 
@@ -279,14 +285,14 @@ export function apiMiddleware() {
               return sendJson(res, 400, { detail: 'Invalid phone number format.' });
             }
 
-            const requestedRole = body.role === 'farm_owner' ? 'farm_owner' : 'customer';
+            const requestedRole = ['farm_owner', 'rider'].includes(body.role) ? body.role : 'customer';
             const farmName = requestedRole === 'farm_owner' ? String(body.farm_name || '').trim() : '';
             if (requestedRole === 'farm_owner' && !farmName) {
               return sendJson(res, 400, { detail: 'Farm name is required for Farm Owner accounts.' });
             }
 
             // Check duplicate email
-            const check = db.prepare('SELECT id FROM users WHERE email = ?').get(body.email);
+            const check = db.prepare('SELECT id FROM users WHERE lower(trim(email)) = ?').get(email);
             if (check) {
               return sendJson(res, 400, { detail: 'User with this email already exists.' });
             }
@@ -300,7 +306,7 @@ export function apiMiddleware() {
 
             const result = insert.run(
               sanitizeInput(body.name),
-              body.email.toLowerCase(),
+              email,
               hashedPassword,
               storedRole,
               sanitizeInput(body.phone || ''),
@@ -329,6 +335,19 @@ export function apiMiddleware() {
           const currentUser = token ? getUserFromToken(token) : null;
 
           // --- USER PROFILE ROUTES ---
+          if (pathname === '/api/users/riders' && method === 'GET') {
+            if (!currentUser) {
+              return sendJson(res, 401, { detail: 'Authentication required.' });
+            }
+            if (!isFarmManager(currentUser)) {
+              return sendJson(res, 403, { detail: 'Farm management access required.' });
+            }
+            const riders = db.prepare(
+              "SELECT id, name, email FROM users WHERE role = 'rider' ORDER BY name COLLATE NOCASE"
+            ).all();
+            return sendJson(res, 200, riders);
+          }
+
           if (pathname === '/api/users/profile' && method === 'PUT') {
             if (!currentUser) {
               return sendJson(res, 401, { detail: 'Authentication required.' });
@@ -416,6 +435,42 @@ export function apiMiddleware() {
             return sendJson(res, 200, summary);
           }
 
+          const livestockItemMatch = pathname.match(/^\/api\/farm\/livestock\/(\d+)$/);
+          if (livestockItemMatch && (method === 'PUT' || method === 'DELETE')) {
+            if (!currentUser || !isFarmManager(currentUser)) {
+              return sendJson(res, 403, { detail: 'Farm management access required.' });
+            }
+            const id = Number(livestockItemMatch[1]);
+            if (method === 'DELETE') {
+              const existing = db.prepare('SELECT id FROM livestock WHERE id = ?').get(id);
+              if (!existing) return sendJson(res, 404, { detail: 'Animal record not found.' });
+              db.exec('BEGIN IMMEDIATE');
+              try {
+                db.prepare('DELETE FROM health_records WHERE livestock_id = ?').run(id);
+                db.prepare('UPDATE production_records SET livestock_id = NULL WHERE livestock_id = ?').run(id);
+                db.prepare('DELETE FROM livestock WHERE id = ?').run(id);
+                db.exec('COMMIT');
+                return sendJson(res, 200, { success: true });
+              } catch (error) {
+                db.exec('ROLLBACK');
+                throw error;
+              }
+            }
+            const b = await parseBody(req);
+            if (!b.tag_id || !b.breed || !b.species || !b.gender) {
+              return sendJson(res, 400, { detail: 'Tag ID, breed, species, and gender are required.' });
+            }
+            db.prepare(`
+              UPDATE livestock SET tag_id = ?, name = ?, breed = ?, species = ?, gender = ?,
+              date_of_birth = ?, weight_kg = ?, status = ?, purchase_date = ?, purchase_price = ?
+              WHERE id = ?
+            `).run(sanitizeInput(b.tag_id), sanitizeInput(b.name || ''), sanitizeInput(b.breed), sanitizeInput(b.species),
+              sanitizeInput(b.gender), b.date_of_birth || null, Number(b.weight_kg) || null,
+              sanitizeInput(b.status || 'Milking'), b.purchase_date || null, Number(b.purchase_price) || 0, id);
+            const row = db.prepare('SELECT * FROM livestock WHERE id = ?').get(id);
+            return row ? sendJson(res, 200, row) : sendJson(res, 404, { detail: 'Animal record not found.' });
+          }
+
           const farmResourceMatch = pathname.match(/^\/api\/farm\/(livestock|production|feed|health|finance|notifications)$/);
           if (farmResourceMatch && (method === 'GET' || method === 'POST')) {
             if (!currentUser || !isFarmManager(currentUser)) {
@@ -433,7 +488,8 @@ export function apiMiddleware() {
             };
 
             if (method === 'GET') {
-              const rows = db.prepare(`SELECT * FROM ${tables[resource]} ORDER BY id DESC LIMIT 100`).all();
+              const limit = resource === 'finance' ? '' : ' LIMIT 100';
+              const rows = db.prepare(`SELECT * FROM ${tables[resource]} ORDER BY id DESC${limit}`).all();
               return sendJson(res, 200, rows);
             }
 
@@ -703,7 +759,14 @@ export function apiMiddleware() {
             const customerId = url.searchParams.get('customer_id');
             let orders;
 
-            if (customerId) {
+            if (currentUser.role === 'rider') {
+              if (customerId) {
+                return sendJson(res, 403, { detail: 'Riders can only view their assigned deliveries.' });
+              }
+              orders = db.prepare(
+                "SELECT * FROM orders WHERE rider_id = ? AND order_status IN ('Out for Delivery', 'Delivered') ORDER BY id DESC"
+              ).all(currentUser.id);
+            } else if (customerId) {
               // Customer can only see their own orders
               if (currentUser.role === 'customer' && parseInt(customerId) !== currentUser.id) {
                 return sendJson(res, 403, { detail: 'Cannot view other customer orders.' });
@@ -725,6 +788,9 @@ export function apiMiddleware() {
             // AUTHENTICATED USERS ONLY
             if (!currentUser) {
               return sendJson(res, 401, { detail: 'Authentication required.' });
+            }
+            if (currentUser.role === 'rider') {
+              return sendJson(res, 403, { detail: 'Rider accounts cannot place customer orders.' });
             }
 
             const b = await parseBody(req);
@@ -831,23 +897,69 @@ export function apiMiddleware() {
             }
           }
 
-          const orderStatusMatch = pathname.match(/^\/api\/orders\/(\d+)\/status$/);
-          if (orderStatusMatch && method === 'PATCH') {
+          const orderRiderMatch = pathname.match(/^\/api\/orders\/(\d+)\/rider$/);
+          if (orderRiderMatch && method === 'PATCH') {
             if (!currentUser) {
               return sendJson(res, 401, { detail: 'Authentication required.' });
             }
             if (!isFarmManager(currentUser)) {
               return sendJson(res, 403, { detail: 'Farm management access required.' });
             }
+            const id = Number(orderRiderMatch[1]);
+            const body = await parseBody(req);
+            const riderId = body.rider_id === null || body.rider_id === '' ? null : Number(body.rider_id);
+            if (riderId !== null && !Number.isInteger(riderId)) {
+              return sendJson(res, 400, { detail: 'A valid rider is required.' });
+            }
+            const order = db.prepare('SELECT id, order_status FROM orders WHERE id = ?').get(id);
+            if (!order) {
+              return sendJson(res, 404, { detail: 'Order not found.' });
+            }
+            if (!['Placed', 'Milked & Chilled', 'Out for Delivery'].includes(order.order_status)) {
+              return sendJson(res, 400, { detail: 'Only active orders can be assigned to a rider.' });
+            }
+            if (riderId !== null) {
+              const rider = db.prepare("SELECT id FROM users WHERE id = ? AND role = 'rider'").get(riderId);
+              if (!rider) {
+                return sendJson(res, 400, { detail: 'Selected account is not a rider.' });
+              }
+            }
+            db.prepare('UPDATE orders SET rider_id = ? WHERE id = ?').run(riderId, id);
+            return sendJson(res, 200, db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
+          }
 
+          const orderStatusMatch = pathname.match(/^\/api\/orders\/(\d+)\/status$/);
+          if (orderStatusMatch && method === 'PATCH') {
+            if (!currentUser) {
+              return sendJson(res, 401, { detail: 'Authentication required.' });
+            }
             const id = Number(orderStatusMatch[1]);
             const b = await parseBody(req);
             const newStatus = b.order_status;
+            const isAssignedRiderDelivery = currentUser.role === 'rider' && newStatus === 'Delivered';
+            const isFarmManagerStatusUpdate = isFarmManager(currentUser) && newStatus !== 'Delivered';
+            if (!isFarmManagerStatusUpdate &&
+                !(currentUser.role === 'customer' && newStatus === 'Cancelled') &&
+                !isAssignedRiderDelivery) {
+              if (newStatus === 'Delivered') {
+                return sendJson(res, 403, { detail: 'Only the assigned rider can mark an order as delivered.' });
+              }
+              return sendJson(res, 403, { detail: 'Farm management access required.' });
+            }
 
             // Validate status transition
-            const order = db.prepare('SELECT order_status FROM orders WHERE id = ?').get(id);
+            const order = db.prepare('SELECT order_status, customer_id, rider_id, items_json FROM orders WHERE id = ?').get(id);
             if (!order) {
               return sendJson(res, 404, { detail: 'Order not found.' });
+            }
+            if (currentUser.role === 'customer' && order.customer_id !== currentUser.id) {
+              return sendJson(res, 403, { detail: 'Cannot update another customer order.' });
+            }
+            if (isAssignedRiderDelivery && order.rider_id !== currentUser.id) {
+              return sendJson(res, 403, { detail: 'Cannot update an order that is not assigned to you.' });
+            }
+            if (currentUser.role === 'customer' && order.order_status !== 'Placed') {
+              return sendJson(res, 400, { detail: 'Only pending orders can be cancelled.' });
             }
 
             const validTransitions = {
@@ -865,8 +977,22 @@ export function apiMiddleware() {
             }
 
             const payStatus = newStatus === 'Delivered' ? 'Paid' : 'Pending';
-            db.prepare('UPDATE orders SET order_status = ?, payment_status = ? WHERE id = ?')
-              .run(newStatus, payStatus, id);
+            db.exec('BEGIN IMMEDIATE');
+            try {
+              if (newStatus === 'Cancelled') {
+                const items = JSON.parse(order.items_json || '[]');
+                for (const item of items) {
+                  db.prepare('UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?')
+                    .run(Number(item.qty) || 0, Number(item.productId));
+                }
+              }
+              db.prepare('UPDATE orders SET order_status = ?, payment_status = ? WHERE id = ?')
+                .run(newStatus, payStatus, id);
+              db.exec('COMMIT');
+            } catch (error) {
+              db.exec('ROLLBACK');
+              throw error;
+            }
 
             const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
             return sendJson(res, 200, updated);

@@ -22,6 +22,8 @@ export function LoginPage() {
       const user = await login(email, password);
       if (user.role === 'admin' || user.role === 'farm_owner') {
         navigate('/admin');
+      } else if (user.role === 'rider') {
+        navigate('/rider');
       } else {
         navigate('/dashboard');
       }

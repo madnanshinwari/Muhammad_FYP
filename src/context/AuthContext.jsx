@@ -77,9 +77,8 @@ export function AuthProvider({ children }) {
   const quickLogin = async (roleType) => {
     if (roleType === 'admin') {
       return login('admin@abdulsalamdairy.com', 'admin123');
-    } else {
-      return login('customer@abdulsalamdairy.com', 'customer123');
     }
+    return login('customer@abdulsalamdairy.com', 'customer123');
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'farm_owner';

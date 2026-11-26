@@ -131,6 +131,20 @@ export const api = {
     return handleResponse(res);
   },
 
+  getRiders: async () => {
+    const res = await fetch(`${API_BASE}/users/riders`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  assignOrderRider: async (orderId, riderId) => {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/rider`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ rider_id: riderId })
+    });
+    return handleResponse(res);
+  },
+
   getFarmSummary: async () => {
     const res = await fetch(`${API_BASE}/farm/summary`, { headers: getHeaders() });
     return handleResponse(res);
@@ -146,6 +160,23 @@ export const api = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  updateFarmLivestock: async (id, data) => {
+    const res = await fetch(`${API_BASE}/farm/livestock/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  deleteFarmLivestock: async (id) => {
+    const res = await fetch(`${API_BASE}/farm/livestock/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
     });
     return handleResponse(res);
   },

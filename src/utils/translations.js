@@ -24,7 +24,7 @@ export const translations = {
     heroSubtitle: "Raw unadulterated buffalo and cow milk from pasture-fed livestock. Chilled within 30 minutes of milking to preserve natural vitamins, rich malai, and pure taste.",
     heroCtaShop: "Order Fresh Batch",
     heroStatLiters: "Liters Daily Farm Yield",
-    heroStatCows: "Healthy Pedigree Livestock",
+    heroStatCows: "Total Cows",
     heroStatCustomers: "Happy Lahore Households",
     heroStatPurity: "Pure & Halal Tested",
 
@@ -168,7 +168,7 @@ export const translations = {
     heroSubtitle: "نیلی راوی بھینسوں اور ساہیوال گائے کا خالص قدرتی کچا دودھ۔ دوہنے کے ۳۰ منٹ کے اندر جدید چلر میں محفوظ تاکہ خالص بالائی، مٹھاس اور وٹامنز برقرار رہیں۔",
     heroCtaShop: "تازہ لاٹ آرڈر کریں",
     heroStatLiters: "لیٹر روزانہ فارم پیداوار",
-    heroStatCows: "صحت مند اعلیٰ نسل کے مویشی",
+    heroStatCows: "کل گائیں",
     heroStatCustomers: "مطمئن لاہوری خاندان",
     heroStatPurity: "خالص اور حلال ٹیسٹ شدہ",
 

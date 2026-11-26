@@ -19,7 +19,7 @@ export function HomePage() {
   const { t, lang } = useLanguage();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [stats, setStats] = useState({
-    today_yield_liters: 760.5,
+    today_yield_liters: 100,
     pending_orders: 8,
     today_revenue: 18450,
     average_chiller_temp: 3.8
@@ -85,7 +85,7 @@ export function HomePage() {
                 </div>
                 <div className="p-3 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs">
                   <span className="text-xs text-gray-500 block">{t('heroStatCows')}</span>
-                  <span className="text-xl font-bold text-[#14532D] tabular-nums">250+</span>
+                  <span className="text-xl font-bold text-[#14532D] tabular-nums">16</span>
                 </div>
                 <div className="p-3 rounded-xl bg-white border border-[#E2E8F0] shadow-2xs">
                   <span className="text-xs text-gray-500 block">{t('metricChillerTemp')}</span>

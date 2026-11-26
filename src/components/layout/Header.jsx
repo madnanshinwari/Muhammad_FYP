@@ -21,8 +21,12 @@ export function Header() {
       ? t('navFarmOwnerAccount')
       : user.role === 'admin'
         ? t('navFarmDirectorAccount')
-        : t('navCustomerAccount')
+        : user.role === 'rider'
+          ? 'Rider Account'
+          : t('navCustomerAccount')
     : '';
+  const showPrices = !user || (user.role !== 'customer' && user.role !== 'farm_owner');
+  const showStoreLinks = user?.role !== 'rider';
   useEffect(() => {
     api.getProducts()
       .then(setProducts)
@@ -80,26 +84,30 @@ export function Header() {
 
         {/* Desktop Nav Links */}
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 text-xs font-medium lg:flex xl:gap-1.5">
-          <Link
-            to="/"
-            className={`whitespace-nowrap rounded-md px-2 py-1.5 transition-colors xl:px-2.5 ${
-              isActive('/')
-                ? 'text-[#218838] font-semibold bg-[#F3F7F1]'
-                : 'text-[#263238] hover:text-[#14532D] hover:bg-[#F3F7F1]'
-            }`}
-          >
-            {t('navHome')}
-          </Link>
-          <Link
-            to="/catalog"
-            className={`whitespace-nowrap rounded-md px-2 py-1.5 transition-colors xl:px-2.5 ${
-              isActive('/catalog')
-                ? 'text-[#218838] font-semibold bg-[#F3F7F1]'
-                : 'text-[#263238] hover:text-[#14532D] hover:bg-[#F3F7F1]'
-            }`}
-          >
-            {t('navShop')}
-          </Link>
+          {showStoreLinks && (
+            <>
+              <Link
+                to="/"
+                className={`whitespace-nowrap rounded-md px-2 py-1.5 transition-colors xl:px-2.5 ${
+                  isActive('/')
+                    ? 'text-[#218838] font-semibold bg-[#F3F7F1]'
+                    : 'text-[#263238] hover:text-[#14532D] hover:bg-[#F3F7F1]'
+                }`}
+              >
+                {t('navHome')}
+              </Link>
+              <Link
+                to="/catalog"
+                className={`whitespace-nowrap rounded-md px-2 py-1.5 transition-colors xl:px-2.5 ${
+                  isActive('/catalog')
+                    ? 'text-[#218838] font-semibold bg-[#F3F7F1]'
+                    : 'text-[#263238] hover:text-[#14532D] hover:bg-[#F3F7F1]'
+                }`}
+              >
+                {t('navShop')}
+              </Link>
+            </>
+          )}
           {user?.role === 'customer' && (
             <Link
               to="/dashboard"
@@ -112,29 +120,31 @@ export function Header() {
               {lang === 'ur' ? 'ڈیش بورڈ' : 'Dashboard'}
             </Link>
           )}
-          <div className="group relative">
-            <button
-              type="button"
-              aria-label={t('navPrices')}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[#14532D] transition-colors hover:bg-[#F3F7F1] xl:px-2.5"
-            >
-              <Tag className="h-3.5 w-3.5 text-[#218838]" />
-              <span>{t('navPrices')}</span>
-            </button>
-            <div className="invisible absolute right-0 top-full z-50 mt-2 w-60 translate-y-1 rounded-xl border border-[#E2E8F0] bg-white p-3 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-              <p className="mb-2 border-b border-[#E2E8F0] pb-2 text-[11px] font-bold uppercase tracking-wide text-[#14532D]">
-                {t('navPrices')}
-              </p>
-              <div className="grid grid-cols-1 gap-1.5 text-xs text-[#263238]">
-                {products.map((product) => (
-                  <span key={product.id} className="flex justify-between gap-3">
-                    <span>{lang === 'ur' ? product.name_ur : product.name_en}</span>
-                    <strong>{formatPrice(product)}</strong>
-                  </span>
-                ))}
+          {showPrices && (
+            <div className="group relative">
+              <button
+                type="button"
+                aria-label={t('navPrices')}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[#14532D] transition-colors hover:bg-[#F3F7F1] xl:px-2.5"
+              >
+                <Tag className="h-3.5 w-3.5 text-[#218838]" />
+                <span>{t('navPrices')}</span>
+              </button>
+              <div className="invisible absolute right-0 top-full z-50 mt-2 w-60 translate-y-1 rounded-xl border border-[#E2E8F0] bg-white p-3 opacity-0 shadow-xl transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                <p className="mb-2 border-b border-[#E2E8F0] pb-2 text-[11px] font-bold uppercase tracking-wide text-[#14532D]">
+                  {t('navPrices')}
+                </p>
+                <div className="grid grid-cols-1 gap-1.5 text-xs text-[#263238]">
+                  {products.map((product) => (
+                    <span key={product.id} className="flex justify-between gap-3">
+                      <span>{lang === 'ur' ? product.name_ur : product.name_en}</span>
+                      <strong>{formatPrice(product)}</strong>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {isAdmin && (
             <Link
               to="/admin"
@@ -168,7 +178,9 @@ export function Header() {
           </button>
 
           <Link
-            to={user?.role === 'customer' ? "/dashboard" : user ? "/profile" : "/login"}
+            to={user?.role === 'customer'
+              ? '/dashboard'
+              : user?.role === 'rider' ? '/rider' : user ? '/profile' : '/login'}
             className="hidden items-center gap-1.5 rounded-lg p-2 text-[#263238] transition-colors hover:bg-[#F3F7F1] sm:flex"
           >
             {user?.profile_image_url ? (
@@ -225,20 +237,24 @@ export function Header() {
       {mobileMenuOpen && (
         <div id="mobile-navigation" className="border-t border-[#E2E8F0] bg-white px-4 py-4 lg:hidden">
           <div className="grid grid-cols-1 gap-1.5">
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 text-sm font-medium text-[#263238]"
-          >
-            {t('navHome')}
-          </Link>
-          <Link
-            to="/catalog"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2 text-sm font-medium text-[#263238]"
-          >
-            {t('navShop')}
-          </Link>
+          {showStoreLinks && (
+            <>
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-sm font-medium text-[#263238]"
+              >
+                {t('navHome')}
+              </Link>
+              <Link
+                to="/catalog"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-sm font-medium text-[#263238]"
+              >
+                {t('navShop')}
+              </Link>
+            </>
+          )}
           {user?.role === 'customer' && (
             <Link
               to="/dashboard"
@@ -248,20 +264,22 @@ export function Header() {
               {lang === 'ur' ? 'میرا ڈیش بورڈ' : 'My Dashboard'}
             </Link>
           )}
-          <div className="rounded-xl bg-[#F3F7F1] p-3">
-            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[#14532D]">
-              <Tag className="h-3.5 w-3.5 text-[#218838]" />
-              {t('navPrices')}
+          {showPrices && (
+            <div className="rounded-xl bg-[#F3F7F1] p-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[#14532D]">
+                <Tag className="h-3.5 w-3.5 text-[#218838]" />
+                {t('navPrices')}
+              </div>
+              <div className="grid grid-cols-1 gap-1 text-xs text-[#263238] sm:grid-cols-2">
+                {products.map((product) => (
+                  <span key={product.id} className="flex justify-between gap-2">
+                    <span>{lang === 'ur' ? product.name_ur : product.name_en}</span>
+                    <strong>{formatPrice(product)}</strong>
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-1 text-xs text-[#263238] sm:grid-cols-2">
-              {products.map((product) => (
-                <span key={product.id} className="flex justify-between gap-2">
-                  <span>{lang === 'ur' ? product.name_ur : product.name_en}</span>
-                  <strong>{formatPrice(product)}</strong>
-                </span>
-              ))}
-            </div>
-          </div>
+          )}
           {isAdmin && (
             <Link
               to="/admin"

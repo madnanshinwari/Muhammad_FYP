@@ -7,7 +7,7 @@ import { MetricStatCard } from '../../components/cards/MetricStatCard.jsx';
 import { ProductModal } from '../../components/forms/ProductModal.jsx';
 import { MilkingBatchModal } from '../../components/forms/MilkingBatchModal.jsx';
 import { MilkingBatchTable } from '../../components/tables/MilkingBatchTable.jsx';
-import { ShoppingBag, Wallet, Receipt, Hourglass, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, CheckCircle2, Printer } from 'lucide-react';
+import { ShoppingBag, Wallet, Receipt, Hourglass, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, CheckCircle2, Printer, Download, UserCheck } from 'lucide-react';
 
 // A product is "low on stock" when this many units or fewer are left.
 const LOW_STOCK_LIMIT = 10;
@@ -68,6 +68,8 @@ const PAYMENT_COLOR = {
   'EasyPaisa': '#0EA5E9',
   'Bank Transfer': '#6366F1'
 };
+const EXPENSE_CATEGORIES = ['Electricity Bill', 'Salaries', 'Cow Meals', 'Other'];
+const ANIMAL_STATUSES = ['Milking', 'Pregnant', 'Dry', 'Calf'];
 
 const RANGES = [
   { id: 'today', label: 'Today' },
@@ -79,6 +81,18 @@ const RANGES = [
 
 const money = (value) => `Rs. ${Math.round(Number(value) || 0).toLocaleString()}`;
 const litres = (value) => `${(Math.round((Number(value) || 0) * 10) / 10).toLocaleString()} L`;
+
+const animalAge = (dateOfBirth) => {
+  if (!dateOfBirth) return 'Age not set';
+  const birth = new Date(`${dateOfBirth}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return 'Age not set';
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0) { years -= 1; months += 12; }
+  if (years > 0) return `${years}y${months ? ` ${months}m` : ''}`;
+  return `${Math.max(months, 0)}m`;
+};
 
 function parseItems(order) {
   try {
@@ -112,6 +126,11 @@ function addDays(date, days) {
   const copy = new Date(date);
   copy.setDate(copy.getDate() + days);
   return copy;
+}
+
+function csvCell(value) {
+  const text = String(value ?? '');
+  return `"${text.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')}"`;
 }
 
 // Returns the start/end of the chosen range and of the period right before it.
@@ -194,28 +213,53 @@ export function AdminDashboard() {
   const [tab, setTab] = useState('overview');
   const [range, setRange] = useState('7d');
   const [orders, setOrders] = useState([]);
+  const [riders, setRiders] = useState([]);
   const [products, setProducts] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [financeRows, setFinanceRows] = useState([]);
+  const [livestock, setLivestock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [orderFilter, setOrderFilter] = useState('all');
   const [busyOrderId, setBusyOrderId] = useState(null);
+  const [busyRiderOrderId, setBusyRiderOrderId] = useState(null);
+  const [riderSelections, setRiderSelections] = useState({});
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    transaction_date: new Date().toISOString().slice(0, 10),
+    category: EXPENSE_CATEGORIES[0],
+    description: '',
+    amount: ''
+  });
+  const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [animalSearch, setAnimalSearch] = useState('');
+  const [animalFormOpen, setAnimalFormOpen] = useState(false);
+  const [editingAnimal, setEditingAnimal] = useState(null);
+  const [animalForm, setAnimalForm] = useState({
+    tag_id: '', name: '', breed: '', species: 'Cow', gender: 'Female',
+    date_of_birth: '', weight_kg: '', status: 'Milking', purchase_date: '', purchase_price: ''
+  });
 
   const loadAll = async () => {
     setLoading(true);
     setError('');
     try {
-      const [orderRows, productRows, batchRows] = await Promise.all([
+      const [orderRows, productRows, batchRows, financeRowsResult, livestockRows, riderRows] = await Promise.all([
         api.getOrders(),
         api.getProducts(),
-        api.getBatches()
+        api.getBatches(),
+        api.getFarmResource('finance'),
+        api.getFarmResource('livestock'),
+        api.getRiders()
       ]);
       setOrders(orderRows);
       setProducts(productRows);
       setBatches(batchRows);
+      setFinanceRows(financeRowsResult);
+      setLivestock(livestockRows);
+      setRiders(riderRows);
     } catch (err) {
       setError(err.message || 'Unable to load dashboard data.');
     } finally {
@@ -363,6 +407,26 @@ export function AdminDashboard() {
     };
   }, [orders, products, batches]);
 
+  const expenseReports = useMemo(() => {
+    const monthRows = financeRows.filter((row) =>
+      row.transaction_type === 'expense' && String(row.transaction_date).startsWith(reportMonth)
+    );
+    const yearRows = financeRows.filter((row) =>
+      row.transaction_type === 'expense' && String(row.transaction_date).startsWith(reportMonth.slice(0, 4))
+    );
+    const byCategory = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category, 0]));
+    monthRows.forEach((row) => {
+      byCategory[row.category] = (byCategory[row.category] || 0) + (Number(row.amount) || 0);
+    });
+    return {
+      monthRows,
+      yearRows,
+      monthTotal: monthRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
+      yearTotal: yearRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0),
+      byCategory
+    };
+  }, [financeRows, reportMonth]);
+
   // ---------- Delivery sheet ----------
   const openOrders = useMemo(
     () => orders.filter((order) => OPEN_STATUSES.includes(order.order_status)),
@@ -409,6 +473,83 @@ export function AdminDashboard() {
     } finally {
       setBusyOrderId(null);
     }
+  };
+
+  const assignRider = async (order, riderId) => {
+    setBusyRiderOrderId(order.id);
+    setError('');
+    try {
+      const updated = await api.assignOrderRider(order.id, riderId ? Number(riderId) : null);
+      setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setRiderSelections((current) => ({ ...current, [order.id]: String(updated.rider_id || '') }));
+    } catch (err) {
+      setError(err.message || 'Unable to assign this order.');
+    } finally {
+      setBusyRiderOrderId(null);
+    }
+  };
+
+  const downloadSalesHistory = (days, label) => {
+    const now = new Date();
+    const end = addDays(startOfDay(now), 1);
+    const start = days === 1 ? startOfDay(now) : addDays(end, -days);
+    const periodOrders = orders.filter((order) => {
+      if (order.order_status === 'Cancelled') return false;
+      const time = orderDate(order).getTime();
+      return !Number.isNaN(time) && time >= start.getTime() && time < end.getTime();
+    });
+
+    const headers = [
+      'Order Code',
+      'Date',
+      'Customer',
+      'Phone',
+      'Address',
+      'Items',
+      'Delivery Slot',
+      'Payment Method',
+      'Payment Status',
+      'Order Status',
+      'Bottle Deposit',
+      'Total Amount'
+    ];
+    const rows = periodOrders.map((order) => {
+      const items = parseItems(order)
+        .map((item) => `${item.name || 'Unknown'} ${item.unit || ''} x ${item.qty || 0}`)
+        .join('; ');
+      const date = orderDate(order);
+      return [
+        order.order_code,
+        Number.isNaN(date.getTime()) ? '' : date.toISOString(),
+        order.customer_name,
+        order.customer_phone,
+        order.delivery_address,
+        items,
+        order.delivery_slot,
+        order.payment_method,
+        order.payment_status,
+        order.order_status,
+        Number(order.bottle_deposit) || 0,
+        Number(order.total_amount) || 0
+      ];
+    });
+    const salesTotal = periodOrders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+    const csv = [
+      headers.map(csvCell).join(','),
+      ...rows.map((row) => row.map(csvCell).join(',')),
+      '',
+      csvCell('Sales total'), csvCell(salesTotal)
+    ].join('\r\n');
+    const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    const datePart = now.toISOString().slice(0, 10);
+    anchor.href = url;
+    anchor.download = `farm-sales-${label}-${datePart}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
   };
 
   // ---------- Products ----------
@@ -461,11 +602,79 @@ export function AdminDashboard() {
     }
   };
 
+  const openAddAnimal = () => {
+    setEditingAnimal(null);
+    setAnimalForm({
+      tag_id: '', name: '', breed: '', species: 'Cow', gender: 'Female',
+      date_of_birth: '', weight_kg: '', status: 'Milking', purchase_date: '', purchase_price: ''
+    });
+    setAnimalFormOpen(true);
+  };
+
+  const openEditAnimal = (animal) => {
+    setEditingAnimal(animal);
+    setAnimalForm({
+      tag_id: animal.tag_id || '', name: animal.name || '', breed: animal.breed || '',
+      species: animal.species || 'Cow', gender: animal.gender || 'Female',
+      date_of_birth: animal.date_of_birth || '', weight_kg: animal.weight_kg ?? '',
+      status: animal.status || 'Milking', purchase_date: animal.purchase_date || '',
+      purchase_price: animal.purchase_price ?? ''
+    });
+    setAnimalFormOpen(true);
+  };
+
+  const saveAnimal = async (event) => {
+    event.preventDefault();
+    setError('');
+    try {
+      const saved = editingAnimal
+        ? await api.updateFarmLivestock(editingAnimal.id, animalForm)
+        : await api.createFarmResource('livestock', animalForm);
+      setLivestock((current) => editingAnimal
+        ? current.map((animal) => (animal.id === saved.id ? saved : animal))
+        : [saved, ...current]);
+      setAnimalFormOpen(false);
+      setEditingAnimal(null);
+    } catch (err) {
+      setError(err.message || 'Unable to save this animal.');
+    }
+  };
+
+  const deleteAnimal = async (animal) => {
+    if (!window.confirm(`Delete animal record "${animal.tag_id}"?`)) return;
+    setError('');
+    try {
+      await api.deleteFarmLivestock(animal.id);
+      setLivestock((current) => current.filter((item) => item.id !== animal.id));
+    } catch (err) {
+      setError(err.message || 'Unable to delete this animal.');
+    }
+  };
+
+  const saveExpense = async (event) => {
+    event.preventDefault();
+    setError('');
+    try {
+      const created = await api.createFarmResource('finance', {
+        ...expenseForm,
+        transaction_type: 'expense',
+        payment_status: 'Paid'
+      });
+      setFinanceRows((current) => [created, ...current]);
+      setExpenseForm((current) => ({ ...current, description: '', amount: '' }));
+    } catch (err) {
+      setError(err.message || 'Unable to save this expense.');
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'orders', label: 'Orders', badge: pipeline['Placed'] },
     { id: 'delivery', label: 'Delivery Sheet', badge: openOrders.length },
     { id: 'milk', label: 'Milk Production' },
+    { id: 'animals', label: 'Animal Management' },
+    { id: 'history', label: 'Sales History' },
+    { id: 'expenses', label: 'Expenses' },
     { id: 'products', label: 'Products', badge: lowStock.length, warn: true }
   ];
 
@@ -735,6 +944,76 @@ export function AdminDashboard() {
         </section>
       )}
 
+      {/* ================= SALES HISTORY ================= */}
+      {tab === 'history' && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-sm font-bold text-[#14532D]">Download sales history</h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  CSV downloads include all non-cancelled orders in the selected period.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => downloadSalesHistory(1, '1-day')}>
+                  <Download className="h-3.5 w-3.5" /> 1 Day
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => downloadSalesHistory(30, '1-month')}>
+                  <Download className="h-3.5 w-3.5" /> 1 Month
+                </Button>
+                <Button size="sm" variant="primary" onClick={() => downloadSalesHistory(90, '3-months')}>
+                  <Download className="h-3.5 w-3.5" /> 3 Months
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#F3F7F1] text-[10px] uppercase tracking-wider text-[#14532D]">
+                <tr>
+                  <th className="px-3 py-3">Period</th>
+                  <th className="px-3 py-3">Orders</th>
+                  <th className="px-3 py-3">Sales</th>
+                  <th className="px-3 py-3">Download</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E2E8F0]">
+                {[
+                  { days: 1, label: '1 day', fileLabel: '1-day' },
+                  { days: 30, label: '1 month', fileLabel: '1-month' },
+                  { days: 90, label: '3 months', fileLabel: '3-months' }
+                ].map((period) => {
+                  const end = addDays(startOfDay(new Date()), 1);
+                  const start = period.days === 1
+                    ? startOfDay(new Date())
+                    : addDays(end, -period.days);
+                  const periodOrders = orders.filter((order) => {
+                    if (order.order_status === 'Cancelled') return false;
+                    const time = orderDate(order).getTime();
+                    return !Number.isNaN(time) && time >= start.getTime() && time < end.getTime();
+                  });
+                  const total = periodOrders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+                  return (
+                    <tr key={period.label} className="hover:bg-[#FFFDF5]">
+                      <td className="px-3 py-3 font-semibold text-[#263238]">{period.label}</td>
+                      <td className="px-3 py-3 tabular-nums">{periodOrders.length}</td>
+                      <td className="px-3 py-3 font-bold tabular-nums text-[#14532D]">{money(total)}</td>
+                      <td className="px-3 py-3">
+                        <Button size="sm" variant={period.days === 90 ? 'primary' : 'outline'} onClick={() => downloadSalesHistory(period.days, period.fileLabel)}>
+                          <Download className="h-3.5 w-3.5" /> Download CSV
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {/* ================= ORDERS ================= */}
       {tab === 'orders' && (
         <section className="space-y-4">
@@ -774,6 +1053,7 @@ export function AdminDashboard() {
                 ) : visibleOrders.map((order) => {
                   const date = orderDate(order);
                   const next = NEXT_STATUS[order.order_status];
+                  const canAdvanceStatus = next && next !== 'Delivered';
                   const canCancel = OPEN_STATUSES.includes(order.order_status);
                   return (
                     <tr key={order.id} className="align-top hover:bg-[#FFFDF5]">
@@ -805,10 +1085,15 @@ export function AdminDashboard() {
                       <td className="px-3 py-3"><StatusPill status={order.order_status} /></td>
                       <td className="px-3 py-3">
                         <div className="flex flex-col gap-1.5">
-                          {next && (
+                          {canAdvanceStatus && (
                             <Button size="sm" variant="primary" disabled={busyOrderId === order.id} onClick={() => changeStatus(order, next)}>
                               {NEXT_ACTION[order.order_status]}
                             </Button>
+                          )}
+                          {order.order_status === 'Out for Delivery' && (
+                            <span className="text-[11px] text-gray-500">
+                              {order.rider_id ? 'Assigned rider marks delivered' : 'Assign a rider from the Delivery Sheet'}
+                            </span>
                           )}
                           {canCancel && (
                             <Button size="sm" variant="ghost" disabled={busyOrderId === order.id} onClick={() => changeStatus(order, 'Cancelled')}>
@@ -841,7 +1126,7 @@ export function AdminDashboard() {
 
           <div className="no-print flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-[#3f4a3d]">
-              All orders that are not yet delivered, grouped by time slot and sorted by address. Print it and give it to the rider.
+              Assign active orders to Riders here. Each Rider sees only assigned deliveries in their portal. You can also print the sheet.
             </p>
             <Button size="sm" variant="primary" onClick={() => window.print()} disabled={openOrders.length === 0}>
               <Printer className="h-3.5 w-3.5" /> Print Sheet
@@ -880,13 +1165,18 @@ export function AdminDashboard() {
                           <th className="px-3 py-2">Customer</th>
                           <th className="px-3 py-2">Address</th>
                           <th className="px-3 py-2">Items</th>
+                          <th className="px-3 py-2">Rider</th>
                           <th className="px-3 py-2">Collect</th>
-                          <th className="px-3 py-2">Done</th>
+                          <th className="px-3 py-2">Assign</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E2E8F0]">
                         {group.orders.map((order, index) => {
                           const due = cashDue(order);
+                          const selectedRiderId = riderSelections[order.id] ?? String(order.rider_id || '');
+                          const assignedRider = riders.find((rider) => String(rider.id) === String(order.rider_id));
+                          const selectedRider = riders.find((rider) => String(rider.id) === selectedRiderId);
+                          const assignmentChanged = selectedRiderId !== String(order.rider_id || '');
                           return (
                             <tr key={order.id} className="align-top">
                               <td className="px-3 py-2 tabular-nums text-gray-500">{index + 1}</td>
@@ -906,13 +1196,46 @@ export function AdminDashboard() {
                                 </ul>
                               </td>
                               <td className="px-3 py-2">
+                                <select
+                                  aria-label={`Assign rider for ${order.order_code}`}
+                                  value={selectedRiderId}
+                                  disabled={busyRiderOrderId === order.id || riders.length === 0}
+                                  onChange={(event) => setRiderSelections((current) => ({
+                                    ...current,
+                                    [order.id]: event.target.value
+                                  }))}
+                                  className="min-w-36 max-w-44 rounded-md border border-[#E2E8F0] bg-white px-2 py-1 text-xs text-[#263238] disabled:opacity-60"
+                                >
+                                  <option value="">{riders.length ? 'Unassigned' : 'No riders yet'}</option>
+                                  {riders.map((rider) => (
+                                    <option key={rider.id} value={rider.id}>{rider.name}</option>
+                                  ))}
+                                </select>
+                                <span className="mt-1 block max-w-44 truncate text-[10px] text-gray-500">
+                                  {assignmentChanged
+                                    ? selectedRider ? `Selected: ${selectedRider.name}` : 'Choose a rider'
+                                    : assignedRider ? `Assigned: ${assignedRider.name}` : 'Not assigned'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">
                                 {due > 0 ? (
                                   <span className="font-bold tabular-nums text-[#14532D]">{money(due)}</span>
                                 ) : (
                                   <span className="text-gray-500">{order.payment_method === 'Cash on Delivery' ? 'Paid' : `${order.payment_method} (no cash)`}</span>
                                 )}
                               </td>
-                              <td className="px-3 py-2 text-base">☐</td>
+                              <td className="px-3 py-2">
+                                <button
+                                  type="button"
+                                  aria-label={selectedRiderId ? `Save rider assignment for ${order.order_code}` : `Unassign rider from ${order.order_code}`}
+                                  title={selectedRiderId ? 'Save rider assignment' : 'Remove rider assignment'}
+                                  disabled={busyRiderOrderId === order.id || riders.length === 0 || !assignmentChanged}
+                                  onClick={() => assignRider(order, selectedRiderId)}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#218838]/30 bg-[#F3F7F1] text-[#218838] transition-colors hover:bg-[#b1f2be]/40 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </td>
                             </tr>
                           );
                         })}
@@ -991,6 +1314,178 @@ export function AdminDashboard() {
             <h2 className="text-sm font-bold text-[#14532D]">Recent milking sessions</h2>
             <MilkingBatchTable batches={batches} />
           </div>
+        </section>
+      )}
+
+      {/* ================= ANIMAL MANAGEMENT ================= */}
+      {tab === 'animals' && (
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-extrabold text-[#14532D]">Animal Management</h2>
+              <p className="text-xs text-[#3f4a3d]">Add, view, edit, and manage farm animals.</p>
+            </div>
+            <Button size="sm" variant="primary" onClick={openAddAnimal}>
+              <Plus className="h-3.5 w-3.5" /> Add New Animal
+            </Button>
+          </div>
+
+          {animalFormOpen && (
+            <form onSubmit={saveAnimal} className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-[#14532D]">{editingAnimal ? 'Edit Animal' : 'Add New Animal'}</h3>
+                <button type="button" onClick={() => setAnimalFormOpen(false)} className="text-xs font-semibold text-gray-500 hover:text-[#14532D]">Close</button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ['tag_id', 'Tag ID', 'text', 'e.g. CW-089'],
+                  ['name', 'Animal Name', 'text', 'e.g. Sona'],
+                  ['breed', 'Breed', 'text', 'e.g. Sahiwal'],
+                  ['weight_kg', 'Weight (kg)', 'number', '0']
+                ].map(([name, label, type, placeholder]) => (
+                  <label key={name} className="text-xs font-semibold text-[#263238]">
+                    {label}
+                    <input required={name !== 'name' && name !== 'weight_kg'} type={type} min={type === 'number' ? '0' : undefined} step={type === 'number' ? '0.1' : undefined} value={animalForm[name]} onChange={(event) => setAnimalForm({ ...animalForm, [name]: event.target.value })} placeholder={placeholder} className="mt-1 w-full rounded-lg border border-[#becaba] px-3 py-2 font-normal" />
+                  </label>
+                ))}
+                <label className="text-xs font-semibold text-[#263238]">Species
+                  <select value={animalForm.species} onChange={(event) => setAnimalForm({ ...animalForm, species: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] bg-white px-3 py-2 font-normal">
+                    <option>Cow</option><option>Buffalo</option><option>Calf</option><option>Other</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#263238]">Gender
+                  <select value={animalForm.gender} onChange={(event) => setAnimalForm({ ...animalForm, gender: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] bg-white px-3 py-2 font-normal">
+                    <option>Female</option><option>Male</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#263238]">Status
+                  <select value={animalForm.status} onChange={(event) => setAnimalForm({ ...animalForm, status: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] bg-white px-3 py-2 font-normal">
+                    {ANIMAL_STATUSES.map((status) => <option key={status}>{status}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#263238]">Date of Birth
+                  <input type="date" value={animalForm.date_of_birth} onChange={(event) => setAnimalForm({ ...animalForm, date_of_birth: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] px-3 py-2 font-normal" />
+                </label>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setAnimalFormOpen(false)}>Cancel</Button>
+                <Button type="submit" size="sm" variant="primary">{editingAnimal ? 'Save Changes' : 'Add Animal'}</Button>
+              </div>
+            </form>
+          )}
+
+          <div className="flex items-center gap-3">
+            <input value={animalSearch} onChange={(event) => setAnimalSearch(event.target.value)} placeholder="Search by tag, name, breed or status" className="w-full max-w-md rounded-lg border border-[#becaba] bg-white px-3 py-2 text-xs" />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {livestock
+              .filter((animal) => `${animal.tag_id} ${animal.name} ${animal.breed} ${animal.status}`.toLowerCase().includes(animalSearch.toLowerCase()))
+              .map((animal) => (
+                <article key={animal.id} className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{animal.tag_id}</p>
+                      <h3 className="mt-1 font-extrabold text-[#14532D]">{animal.name || 'Unnamed Animal'}</h3>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${animal.status === 'Milking' ? 'bg-[#DCFCE7] text-[#166534]' : animal.status === 'Pregnant' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#F3F7F1] text-[#263238]'}`}>{animal.status}</span>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                    <div><dt className="text-gray-500">Breed</dt><dd className="mt-1 font-semibold">{animal.breed}</dd></div>
+                    <div><dt className="text-gray-500">Age</dt><dd className="mt-1 font-semibold">{animalAge(animal.date_of_birth)}</dd></div>
+                    <div><dt className="text-gray-500">Species</dt><dd className="mt-1 font-semibold">{animal.species}</dd></div>
+                    <div><dt className="text-gray-500">Gender</dt><dd className="mt-1 font-semibold">{animal.gender}</dd></div>
+                  </dl>
+                  <div className="mt-4 flex gap-2 border-t border-[#E2E8F0] pt-3">
+                    <Button size="sm" variant="outline" onClick={() => openEditAnimal(animal)}><Pencil className="h-3 w-3" /> Edit</Button>
+                    <Button size="sm" variant="danger" onClick={() => deleteAnimal(animal)}><Trash2 className="h-3 w-3" /> Delete</Button>
+                  </div>
+                </article>
+              ))}
+          </div>
+          {livestock.length === 0 && <p className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-xs text-gray-500">No animal records yet. Add your first animal.</p>}
+        </section>
+      )}
+
+      {/* ================= EXPENSES ================= */}
+      {tab === 'expenses' && (
+        <section className="space-y-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-extrabold text-[#14532D]">Farm Expenses</h2>
+              <p className="text-xs text-[#3f4a3d]">Record electricity, salaries, cow meals, and other farm costs.</p>
+            </div>
+            <label className="text-xs font-semibold text-[#14532D]">
+              Report month
+              <input
+                type="month"
+                value={reportMonth}
+                onChange={(event) => setReportMonth(event.target.value)}
+                className="ml-2 rounded-lg border border-[#becaba] bg-white px-2 py-1.5 font-normal text-[#263238]"
+              />
+            </label>
+          </div>
+
+          <form onSubmit={saveExpense} className="grid gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="text-xs font-semibold text-[#263238]">
+              Date
+              <input required type="date" value={expenseForm.transaction_date} onChange={(event) => setExpenseForm({ ...expenseForm, transaction_date: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] px-3 py-2 font-normal" />
+            </label>
+            <label className="text-xs font-semibold text-[#263238]">
+              Category
+              <select value={expenseForm.category} onChange={(event) => setExpenseForm({ ...expenseForm, category: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] bg-white px-3 py-2 font-normal">
+                {EXPENSE_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-[#263238]">
+              Description
+              <input required value={expenseForm.description} onChange={(event) => setExpenseForm({ ...expenseForm, description: event.target.value })} placeholder="e.g. Monthly electricity" className="mt-1 w-full rounded-lg border border-[#becaba] px-3 py-2 font-normal" />
+            </label>
+            <label className="text-xs font-semibold text-[#263238]">
+              Amount (Rs.)
+              <input required min="1" step="0.01" type="number" value={expenseForm.amount} onChange={(event) => setExpenseForm({ ...expenseForm, amount: event.target.value })} className="mt-1 w-full rounded-lg border border-[#becaba] px-3 py-2 font-normal" />
+            </label>
+            <Button type="submit" variant="primary" className="self-end">Add Expense</Button>
+          </form>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <MetricStatCard title="Monthly Expenses" value={money(expenseReports.monthTotal)} subtitle={reportMonth} icon={Wallet} colorScheme="gold" />
+            <MetricStatCard title="Yearly Expenses" value={money(expenseReports.yearTotal)} subtitle={reportMonth.slice(0, 4)} icon={Receipt} colorScheme="green" />
+          </div>
+
+          <Panel title={`Monthly breakdown (${reportMonth})`} hint="Expenses are grouped by category for the selected month.">
+            <div className="space-y-4">
+              {EXPENSE_CATEGORIES.map((category) => (
+                <BarRow
+                  key={category}
+                  label={category}
+                  value={expenseReports.byCategory[category]}
+                  max={Math.max(...Object.values(expenseReports.byCategory), 0)}
+                  text={money(expenseReports.byCategory[category])}
+                  color={category === 'Electricity Bill' ? '#F4C542' : '#218838'}
+                />
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Recent expenses" hint="The latest recorded farm expenses.">
+            {expenseReports.yearRows.length === 0 ? (
+              <p className="text-xs text-gray-500">No expenses recorded for this year.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-[#E2E8F0] text-[10px] uppercase tracking-wider text-[#14532D]">
+                    <tr><th className="px-3 py-2">Date</th><th className="px-3 py-2">Category</th><th className="px-3 py-2">Description</th><th className="px-3 py-2 text-right">Amount</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E2E8F0]">
+                    {expenseReports.yearRows.slice(0, 20).map((row) => (
+                      <tr key={row.id}><td className="px-3 py-2">{row.transaction_date}</td><td className="px-3 py-2">{row.category}</td><td className="px-3 py-2">{row.description}</td><td className="px-3 py-2 text-right font-semibold tabular-nums">{money(row.amount)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
         </section>
       )}
 
